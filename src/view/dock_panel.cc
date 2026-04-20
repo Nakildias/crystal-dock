@@ -210,7 +210,7 @@ void DockPanel::setStrut() {
       break;
     case PanelVisibility::AutoHide:
     case PanelVisibility::IntelligentAutoHide:
-      setStrut(WindowSystem::hasAutoHideManager() ? 0 : 1);
+      setStrut(WindowSystem::hasAutoHideManager() ? 0 : autoHideTriggerZone_);
       break;
     default:
       setStrut(0);
@@ -408,6 +408,7 @@ void DockPanel::updateSlideAnimation() {
     slideTimer_->stop();
     isSliding_ = false;
     isSlidOut_ = slideDirection_;
+    setMask();
   }
   repaint();
 }
@@ -1206,7 +1207,7 @@ bool DockPanel::checkMouseEnter(int x, int y) {
   if (position_ == PanelPosition::Bottom) {
     if (!WindowSystem::hasAutoHideManager() && (visibility_ == PanelVisibility::AutoHide
         || visibility_ == PanelVisibility::IntelligentAutoHide)) {
-      y0 = maxHeight_ - 4;
+      y0 = maxHeight_ - autoHideTriggerZone_;
     } else {
       y0 = maxHeight_ - minHeight_;
       if (isFloating()) { y0 += floatingMargin_; }
@@ -1217,7 +1218,7 @@ bool DockPanel::checkMouseEnter(int x, int y) {
   } else if (position_ == PanelPosition::Top) {
     if (!WindowSystem::hasAutoHideManager() && (visibility_ == PanelVisibility::AutoHide
         || visibility_ == PanelVisibility::IntelligentAutoHide)) {
-      y0 = 4;
+      y0 = autoHideTriggerZone_;
     } else {
       y0 = minHeight_;
       if (isFloating()) { y0 -= floatingMargin_; }
@@ -1228,7 +1229,7 @@ bool DockPanel::checkMouseEnter(int x, int y) {
   } else if (position_ == PanelPosition::Left) {
     if (!WindowSystem::hasAutoHideManager() && (visibility_ == PanelVisibility::AutoHide
         || visibility_ == PanelVisibility::IntelligentAutoHide)) {
-      x0 = 4;
+      x0 = autoHideTriggerZone_;
     } else {
       x0 = minWidth_;
       if (isFloating()) { x0 -= floatingMargin_; }
@@ -1239,7 +1240,7 @@ bool DockPanel::checkMouseEnter(int x, int y) {
   } else {  // Right
     if (!WindowSystem::hasAutoHideManager() && (visibility_ == PanelVisibility::AutoHide
         || visibility_ == PanelVisibility::IntelligentAutoHide)) {
-      x0 = maxWidth_ - 4;
+      x0 = maxWidth_ - autoHideTriggerZone_;
     } else {
       x0 = maxWidth_ - minWidth_;
       if (isFloating()) { x0 += floatingMargin_; }
@@ -1318,9 +1319,12 @@ void DockPanel::intellihideHideUnhide(void* excluding_window) {
       startSlide(true);
     }
   } else {
-    if (isHidden_) {
+    if (isHidden_ || isSlidOut_) {
       isHidden_ = false;
+      isSlidOut_ = false;
       startSlide(false);
+      setMask();
+      WindowSystem::setMargins(this, QMargins(0, 0, 0, 0));
     }
   }
 }
@@ -1399,6 +1403,8 @@ void DockPanel::enterEvent (QEnterEvent* e) {
     isHidden_ = false;
     isSlidOut_ = false;
     startSlide(false);
+    // Restore full minimized mask so the dock is interactive.
+    setMask();
     // Reset any stale layer-shell margins.
     WindowSystem::setMargins(this, QMargins(0, 0, 0, 0));
   }
@@ -1587,6 +1593,7 @@ void DockPanel::loadDockConfig() {
   setPosition(model_->panelPosition(dockId_));
   setScreen(model_->screen(dockId_));
   setVisibility(model_->visibility(dockId_));
+  autoHideTriggerZone_ = model_->autoHideTriggerZone(dockId_);
 
   showApplicationMenu_ = model_->showApplicationMenu(dockId_);
   showPager_ = model_->showPager(dockId_) && WindowSystem::hasVirtualDesktopManager();
@@ -2400,7 +2407,19 @@ void DockPanel::setStrut(int width) {
 
 void DockPanel::setMask() {
   static constexpr int kBounceHeight = 32;
-  if (isMinimized_) {
+  if (isHidden_ && isSlidOut_) {
+    // When fully hidden, only expose a thin trigger zone at the screen edge.
+    const int tz = autoHideTriggerZone_;
+    if (isBottom()) {
+      QWidget::setMask(QRegion(0, maxHeight_ - tz, maxWidth_, tz));
+    } else if (isTop()) {
+      QWidget::setMask(QRegion(0, 0, maxWidth_, tz));
+    } else if (isLeft()) {
+      QWidget::setMask(QRegion(0, 0, tz, maxHeight_));
+    } else {
+      QWidget::setMask(QRegion(maxWidth_ - tz, 0, tz, maxHeight_));
+    }
+  } else if (isMinimized_) {
     if (isHorizontal()) {
       const int x = (maxWidth_ - minWidth_) / 2;
       const int baseY = isTop() ? 0 : maxHeight_ - minHeight_;

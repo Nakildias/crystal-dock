@@ -425,6 +425,7 @@ class DockPanel : public QWidget {
   int itemSpacing_;  // space between items.
   int margin3D_;
   int floatingMargin_;  // margin around the dock in floating mode.
+  int autoHideTriggerZone_;  // pixel zone at screen edge to trigger unhide.
 
   // Width/height of the dock area when minimized.
   int minWidth_;

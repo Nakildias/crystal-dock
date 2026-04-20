@@ -82,6 +82,7 @@ constexpr float kSmallClockFontScaleFactor = 0.6;
 
 constexpr PanelVisibility kDefaultVisibility = PanelVisibility::AlwaysVisible;
 constexpr bool kDefaultAutoHide = false;
+constexpr int kDefaultAutoHideTriggerZone = 4;
 constexpr bool kDefaultShowApplicationMenu = true;
 constexpr bool kDefaultShowPager = false;
 constexpr bool kDefaultShowTaskManager = true;
@@ -598,6 +599,15 @@ class MultiDockModel : public QObject {
     setDockProperty(dockId, kGeneralCategory, kAutoHide, value);
   }
 
+  int autoHideTriggerZone(int dockId) const {
+    return dockProperty(dockId, kGeneralCategory, kAutoHideTriggerZone,
+                        kDefaultAutoHideTriggerZone);
+  }
+
+  void setAutoHideTriggerZone(int dockId, int value) {
+    setDockProperty(dockId, kGeneralCategory, kAutoHideTriggerZone, value);
+  }
+
   bool showApplicationMenu(int dockId) const {
     return dockProperty(dockId, kGeneralCategory, kShowApplicationMenu,
                         kDefaultShowApplicationMenu);
@@ -790,6 +800,7 @@ class MultiDockModel : public QObject {
   // Dock config's categories/properties.
   static constexpr char kGeneralCategory[] = "";
   static constexpr char kAutoHide[] = "autoHide";
+  static constexpr char kAutoHideTriggerZone[] = "autoHideTriggerZone";
   static constexpr char kVisibility[] = "visibility";
   static constexpr char kPosition[] = "position";
   static constexpr char kScreen[] = "screen";

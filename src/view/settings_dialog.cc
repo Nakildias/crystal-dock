@@ -230,6 +230,17 @@ QWidget* SettingsDialog::createBehaviorTab() {
   visibility_->addItem("Intelligent Auto Hide");
   visLayout->addRow("Mode:", visibility_);
 
+  autoHideTriggerZone_ = new QSpinBox(visGroup);
+  autoHideTriggerZone_->setRange(1, 64);
+  autoHideTriggerZone_->setSuffix(" px");
+  visLayout->addRow("Trigger Zone:", autoHideTriggerZone_);
+
+  connect(visibility_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+          [this](int index) {
+    bool isAutoHide = (index == 1 || index == 3);
+    autoHideTriggerZone_->setEnabled(isAutoHide);
+  });
+
   layout->addWidget(visGroup);
 
   // --- Animation ---
@@ -389,6 +400,11 @@ void SettingsDialog::loadData() {
   // Behavior
   position_->setCurrentIndex(static_cast<int>(model_->panelPosition(dockId_)));
   visibility_->setCurrentIndex(static_cast<int>(model_->visibility(dockId_)));
+  autoHideTriggerZone_->setValue(model_->autoHideTriggerZone(dockId_));
+  {
+    int visIdx = static_cast<int>(model_->visibility(dockId_));
+    autoHideTriggerZone_->setEnabled(visIdx == 1 || visIdx == 3);
+  }
   zoomingAnimationSpeed_->setValue(model_->zoomingAnimationSpeed());
   bouncingLauncherIcon_->setChecked(model_->bouncingLauncherIcon());
   bounceCount_->setValue(model_->bounceCount());
@@ -471,6 +487,7 @@ void SettingsDialog::saveData() {
   if (newVisibility != model_->visibility(dockId_)) {
     emit visibilityChanged(newVisibility);
   }
+  model_->setAutoHideTriggerZone(dockId_, autoHideTriggerZone_->value());
   model_->setZoomingAnimationSpeed(zoomingAnimationSpeed_->value());
   model_->setBouncingLauncherIcon(bouncingLauncherIcon_->isChecked());
   model_->setBounceCount(bounceCount_->value());

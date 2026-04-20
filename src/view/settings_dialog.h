@@ -91,6 +91,7 @@ class SettingsDialog : public QDialog {
   // Behavior tab
   QComboBox* position_;
   QComboBox* visibility_;
+  QSpinBox* autoHideTriggerZone_;
   QCheckBox* bouncingLauncherIcon_;
   QSpinBox* bounceCount_;
   QSpinBox* zoomingAnimationSpeed_;
